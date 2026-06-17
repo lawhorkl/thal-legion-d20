@@ -68,7 +68,7 @@ jobs:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          source: "compose.yml"
+          source: "compose.yml,deploy/start-prod.sh"
           target: "/opt/thal-legion-d20"
 
       - name: Pull image and restart stack
@@ -81,10 +81,8 @@ jobs:
           script: |
             cd /opt/thal-legion-d20
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_ACTOR" --password-stdin
-            docker network inspect web >/dev/null 2>&1 || docker network create web
             export GHCR_OWNER="$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
-            docker compose -f compose.yml pull
-            docker compose -f compose.yml up -d --remove-orphans
+            bash deploy/start-prod.sh
             docker image prune -f
         env:
           GHCR_ACTOR: ${{ github.actor }}
