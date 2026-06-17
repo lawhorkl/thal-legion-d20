@@ -1,0 +1,14 @@
+services:
+  thal-legion-d20:
+    image: ghcr.io/${GHCR_OWNER}/thal-legion-d20:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      web:
+        aliases:
+          - thal-legion-d20
+
+networks:
+  web:
+    external: true
