@@ -85,6 +85,10 @@ function buildTextExport(sheet: Partial<CharacterSheet>, effectiveProps: CharPro
     lines.push('\nABILITIES')
     for (const a of sheet.abilities) lines.push(`  - ${a.name}`)
   }
+  if (sheet.proficiencies?.length) {
+    lines.push('\nPROFICIENCIES')
+    for (const p of sheet.proficiencies) lines.push(`  - ${p.name}`)
+  }
   if (sheet.equipments?.length) {
     lines.push('\nEQUIPMENT')
     for (const e of sheet.equipments) lines.push(`  - ${e.name} (${e.rarity}, ${STAT_LABELS[e.chosenStat]})`)
@@ -132,14 +136,31 @@ export function CharacterDetails() {
     updateCharacter(id!, { ...sheet, equipments: draftEquipments, gold: draftGold, signet: draftSignet, consumables: draftConsumables })
   }
 
+  function eqError(): string | null {
+    if (draftEquipments.length >= 3) return 'Maximum of 3 equipment pieces reached.'
+    if (newEq.rarity === 'Legendary' && draftEquipments.some(e => e.rarity === 'Legendary'))
+      return 'Only 1 Legendary piece allowed.'
+    if (RARITY_STAT_BONUS[newEq.rarity] > 0 && draftEquipments.some(e => RARITY_STAT_BONUS[e.rarity] > 0 && e.chosenStat === newEq.chosenStat))
+      return `Another piece already benefits ${STAT_LABELS[newEq.chosenStat]}.`
+    return null
+  }
+
+  function consumableError(): string | null {
+    if (draftConsumables.length >= 5) return 'Maximum of 5 consumables reached.'
+    const name = newConsumable.name.trim().toLowerCase()
+    if (name && draftConsumables.filter(c => c.name.toLowerCase() === name).length >= 2)
+      return 'Maximum of 2 of the same consumable.'
+    return null
+  }
+
   function addEquipment() {
-    if (!newEq.name.trim()) return
+    if (!newEq.name.trim() || eqError()) return
     setDraftEquipments(prev => [...prev, { ...newEq, name: newEq.name.trim() }])
     setNewEq({ name: '', rarity: 'Common', chosenStat: 'combat' })
   }
 
   function addConsumable() {
-    if (!newConsumable.name.trim()) return
+    if (!newConsumable.name.trim() || consumableError()) return
     setDraftConsumables(prev => [...prev, { name: newConsumable.name.trim(), effect: newConsumable.effect.trim() }])
     setNewConsumable({ name: '', effect: '' })
   }
@@ -247,6 +268,20 @@ export function CharacterDetails() {
               </ul>
             </section>
           )}
+
+          {(sheet.proficiencies?.length ?? 0) > 0 && (
+            <section className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proficiencies</p>
+              <ul className="space-y-0.5">
+                {sheet.proficiencies!.map(p => (
+                  <li key={p.name} className="text-sm">
+                    <span className="font-medium">{p.name}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">{p.description}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </TabsContent>
 
         {/* INVENTORY TAB */}
@@ -269,7 +304,9 @@ export function CharacterDetails() {
           </section>
 
           <section className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Equipment</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Equipment <span className="font-normal normal-case">({draftEquipments.length}/3 · max 1 Legendary · no duplicate stat bonuses)</span>
+            </p>
             {draftEquipments.length > 0 ? (
               <ul className="space-y-1">
                 {draftEquipments.map((e, i) => (
@@ -310,12 +347,15 @@ export function CharacterDetails() {
                   {STAT_KEYS.map(k => <SelectItem key={k} value={k}>{STAT_LABELS[k]}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Button size="sm" variant="outline" onClick={addEquipment}>Add</Button>
+              <Button size="sm" variant="outline" onClick={addEquipment} disabled={!!eqError()}>Add</Button>
             </div>
+            {eqError() && <p className="text-xs text-destructive">{eqError()}</p>}
           </section>
 
           <section className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Consumables</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Consumables <span className="font-normal normal-case">({draftConsumables.length}/5 · max 2 of each)</span>
+            </p>
             {draftConsumables.length > 0 ? (
               <ul className="space-y-1">
                 {draftConsumables.map((c, i) => (
@@ -346,8 +386,9 @@ export function CharacterDetails() {
                 onChange={e => setNewConsumable(prev => ({ ...prev, effect: e.target.value }))}
                 className="h-7 text-sm w-40"
               />
-              <Button size="sm" variant="outline" onClick={addConsumable}>Add</Button>
+              <Button size="sm" variant="outline" onClick={addConsumable} disabled={!!consumableError()}>Add</Button>
             </div>
+            {consumableError() && <p className="text-xs text-destructive">{consumableError()}</p>}
           </section>
         </TabsContent>
 

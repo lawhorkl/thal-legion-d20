@@ -7,6 +7,7 @@ type Action =
     | { type: 'APPLY_CLASS_PRESET', payload: Pick<CharacterSheet, 'class'> }
     | { type: 'SET_STATS', payload: Pick<CharacterSheet, 'stats'> }
     | { type: 'SET_ABILITIES', payload: Pick<CharacterSheet, 'abilities'> }
+    | { type: 'SET_PROFICIENCIES', payload: Pick<CharacterSheet, 'proficiencies'> }
 
 export function characterReducer(state: PartialSheet, action: Action) {
     switch (action.type) {
@@ -14,5 +15,6 @@ export function characterReducer(state: PartialSheet, action: Action) {
         case 'APPLY_CLASS_PRESET': return { ...state, ...action.payload }
         case 'SET_STATS': return { ...state, ...action.payload }
         case 'SET_ABILITIES': return { ...state, ...action.payload }
+        case 'SET_PROFICIENCIES': return { ...state, ...action.payload }
     }
 }

@@ -52,6 +52,11 @@ function buildTextExport(sheet: PartialSheet, charProperties: ReturnType<typeof 
         for (const a of sheet.abilities) lines.push(`  - ${a.name}`)
     }
 
+    if (sheet.proficiencies?.length) {
+        lines.push('\nPROFICIENCIES')
+        for (const p of sheet.proficiencies) lines.push(`  - ${p.name}`)
+    }
+
     return lines.join('\n')
 }
 
@@ -152,6 +157,18 @@ export function Review(props: ReviewProps) {
                             <ul className="space-y-0.5">
                                 {sheet.abilities!.map(a => (
                                     <li key={a.name} className="text-sm font-medium">{a.name}</li>
+                                ))}
+                            </ul>
+                        </section>
+                    )}
+
+                    {/* Proficiencies */}
+                    {(sheet.proficiencies?.length ?? 0) > 0 && (
+                        <section className="space-y-1">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proficiencies</p>
+                            <ul className="space-y-0.5">
+                                {sheet.proficiencies!.map(p => (
+                                    <li key={p.name} className="text-sm font-medium">{p.name}</li>
                                 ))}
                             </ul>
                         </section>
