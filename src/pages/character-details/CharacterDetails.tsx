@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { STAT_KEYS, STAT_LABELS, CHAR_PROPERTY_KEYS, CHAR_PROPERTY_LABELS } from '../character-creation/constants'
 import type { Equipment, CharProperties, Stats, Consumable, CharacterSheet } from '@/models/character.interface'
+import { ALL_PROFICIENCIES } from '@/models/proficiencies'
 import { XIcon } from 'lucide-react'
 
 const STAT_TO_PROP: Partial<Record<keyof Stats, keyof CharProperties>> = {
@@ -111,6 +112,13 @@ export function CharacterDetails() {
   const [draftGold, setDraftGold] = useState(character?.sheet.gold ?? 0)
   const [draftSignet, setDraftSignet] = useState(character?.sheet.signet ?? false)
   const [draftConsumables, setDraftConsumables] = useState<Consumable[]>(character?.sheet.consumables ?? [])
+  const [selectedProfNames, setSelectedProfNames] = useState<Set<string>>(() =>
+    new Set((character?.sheet.proficiencies ?? []).map(p => p.name.startsWith('Craft') ? 'Craft' : p.name))
+  )
+  const [craftSpec, setCraftSpec] = useState(() => {
+    const existing = (character?.sheet.proficiencies ?? []).find(p => p.name.startsWith('Craft'))
+    return existing ? existing.name.replace(/^Craft:\s*/, '') : ''
+  })
   const [newEq, setNewEq] = useState<{ name: string; rarity: Equipment['rarity']; chosenStat: keyof Stats }>({
     name: '', rarity: 'Common', chosenStat: 'combat',
   })
@@ -123,17 +131,39 @@ export function CharacterDetails() {
 
   const { sheet, charProperties, hp } = character
 
+  function computeSaveProficiencies() {
+    return ALL_PROFICIENCIES
+      .filter(p => selectedProfNames.has(p.name))
+      .map(p => p.name === 'Craft' && craftSpec.trim()
+        ? { ...p, name: `Craft: ${craftSpec.trim()}` }
+        : p
+      )
+  }
+
+  function toggleProf(name: string) {
+    setSelectedProfNames(prev => {
+      const next = new Set(prev)
+      if (next.has(name)) {
+        next.delete(name)
+      } else if (next.size < 4) {
+        next.add(name)
+      }
+      return next
+    })
+  }
+
   const pendingChanges =
     draftGold !== (sheet.gold ?? 0) ||
     draftSignet !== (sheet.signet ?? false) ||
     JSON.stringify(draftEquipments) !== JSON.stringify(sheet.equipments ?? []) ||
-    JSON.stringify(draftConsumables) !== JSON.stringify(sheet.consumables ?? [])
+    JSON.stringify(draftConsumables) !== JSON.stringify(sheet.consumables ?? []) ||
+    JSON.stringify(computeSaveProficiencies().map(p => p.name).sort()) !==
+      JSON.stringify((sheet.proficiencies ?? []).map(p => p.name).sort())
 
   const { charProperties: effectiveProps, hp: effectiveHp } = applyEquipmentBonuses(charProperties, hp, draftEquipments)
 
   function save() {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    updateCharacter(id!, { ...sheet, equipments: draftEquipments, gold: draftGold, signet: draftSignet, consumables: draftConsumables })
+    updateCharacter(id!, { ...sheet, equipments: draftEquipments, gold: draftGold, signet: draftSignet, consumables: draftConsumables, proficiencies: computeSaveProficiencies() })
   }
 
   function eqError(): string | null {
@@ -269,19 +299,48 @@ export function CharacterDetails() {
             </section>
           )}
 
-          {(sheet.proficiencies?.length ?? 0) > 0 && (
-            <section className="space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proficiencies</p>
-              <ul className="space-y-0.5">
-                {sheet.proficiencies!.map(p => (
-                  <li key={p.name} className="text-sm">
-                    <span className="font-medium">{p.name}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">{p.description}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+          <section className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Proficiencies <span className="font-normal normal-case">({selectedProfNames.size}/4)</span>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Bonus: Easy +2 · Moderate +4 · Hard +6.{' '}
+              Two characters sharing a proficiency roll with <span className="font-medium text-foreground">Advantage</span>.
+            </p>
+            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+              {ALL_PROFICIENCIES.map(prof => {
+                const isSelected = selectedProfNames.has(prof.name)
+                const isDisabled = !isSelected && selectedProfNames.size >= 4
+                return (
+                  <div key={prof.name} className="flex flex-col gap-1">
+                    <button
+                      type="button"
+                      disabled={isDisabled}
+                      onClick={() => toggleProf(prof.name)}
+                      className={`rounded-md border p-2.5 text-left transition-colors ${
+                        isSelected
+                          ? 'border-primary bg-primary/10'
+                          : isDisabled
+                          ? 'cursor-not-allowed border-border opacity-40'
+                          : 'border-border hover:border-primary/50 hover:bg-muted'
+                      }`}
+                    >
+                      <p className="text-sm font-medium">{prof.name}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{prof.description}</p>
+                    </button>
+                    {isSelected && prof.name === 'Craft' && (
+                      <Input
+                        placeholder="Specialization (e.g. Blacksmithing)"
+                        value={craftSpec}
+                        onChange={e => setCraftSpec(e.target.value)}
+                        className="h-7 text-sm"
+                      />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </section>
         </TabsContent>
 
         {/* INVENTORY TAB */}
