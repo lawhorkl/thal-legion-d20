@@ -4,6 +4,7 @@ import { BasicInfo } from "./steps/BasicInfo"
 import { ClassPreset } from "./steps/ClassPreset"
 import { Stats } from "./steps/Stats"
 import { Abilities } from "./steps/Abilities"
+import { Proficiencies } from "./steps/Proficiencies"
 import { Review } from "./steps/Review"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { CharacterCreationSidebar } from "./CharacterCreationSidebar"
@@ -26,6 +27,7 @@ export function CharacterCreation() {
                 {STEPS[step].key === 'class' && <ClassPreset onNext={(data) => { dispatch({ type: 'APPLY_CLASS_PRESET', payload: data }); next() }} />}
                 {STEPS[step].key === 'stats' && <Stats onNext={(data) => { dispatch({ type: 'SET_STATS', payload: data }); next() }} />}
                 {STEPS[step].key === 'abilities' && <Abilities onNext={(data) => { dispatch({ type: 'SET_ABILITIES', payload: data }); next() }} />}
+                {STEPS[step].key === 'proficiencies' && <Proficiencies onNext={(data) => { dispatch({ type: 'SET_PROFICIENCIES', payload: data }); next() }} />}
                 {STEPS[step].key === 'review' && <Review sheet={sheet} onFinish={() => { void navigate('/') }} />}
             </SidebarInset>
         </SidebarProvider>

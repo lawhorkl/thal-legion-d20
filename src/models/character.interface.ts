@@ -11,6 +11,7 @@ export interface CharacterSheet {
     gold: number;
     consumables: Consumable[]
     abilities: Ability[]
+    proficiencies?: Proficiency[]
 }
 
 export interface Equipment {
@@ -29,6 +30,11 @@ export interface Equipment {
 export interface Consumable {
     name: string;
     effect: string;
+}
+
+export interface Proficiency {
+    name: string;
+    description: string;
 }
 
 export interface Ability {
